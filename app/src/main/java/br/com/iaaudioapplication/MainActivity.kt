@@ -1,8 +1,10 @@
 package br.com.iaaudioapplication
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.AudioManager
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -47,8 +49,12 @@ class MainActivity : ComponentActivity() {
         if (isGranted) {
             initializeAudioClassification()
         } else {
-            Log.e(TAG, "Audio recording permission denied")
-            updateOutputText("Permission denied - cannot access microphone")
+            val permanentlyDenied = !shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)
+            if (permanentlyDenied) {
+                showGoToSettingsDialog()
+            } else {
+                updateOutputText("Permissão negada - o microfone não pode ser acessado")
+            }
         }
     }
 
@@ -80,7 +86,14 @@ class MainActivity : ComponentActivity() {
             ) == PackageManager.PERMISSION_GRANTED -> {
                 initializeAudioClassification()
             }
+
+            shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO) -> {
+                // O usuário negou anteriormente, mas não marcou "Não perguntar novamente"
+                requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            }
+
             else -> {
+                Log.i(TAG, "Requesting permission")
                 requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
             }
         }
@@ -127,6 +140,22 @@ class MainActivity : ComponentActivity() {
             Log.e(TAG, "Audio initialization failed", e)
             updateOutputText("Initialization error: ${e.localizedMessage}")
         }
+    }
+
+    private fun showGoToSettingsDialog() {
+        val builder = android.app.AlertDialog.Builder(this)
+        builder.setTitle("Permissão negada permanentemente")
+        builder.setMessage("Para usar o app, conceda a permissão de microfone nas configurações.")
+        builder.setPositiveButton("Abrir configurações") { _, _ ->
+            val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+            val uri = Uri.fromParts("package", packageName, null)
+            intent.data = uri
+            startActivity(intent)
+        }
+        builder.setNegativeButton("Cancelar") { dialog, _ ->
+            dialog.dismiss()
+        }
+        builder.show()
     }
 
     private fun startClassification(
@@ -206,7 +235,14 @@ class MainActivity : ComponentActivity() {
         releaseAudioResources()
     }
 
+    override fun onRestart() {
+        Log.i("Script:", "onRestart()")
+        checkAndRequestPermission()
+        super.onRestart()
+    }
+
     override fun onResume() {
+        Log.i("Script:", "onResume()")
         super.onResume()
         if (ContextCompat.checkSelfPermission(
                 this,
@@ -230,12 +266,6 @@ fun SoundClassificationScreen(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.padding(16.dp)) {
-        Text(
-            text = "Audio Recorder Specs:",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
         Text(
             text = recorderSpecs,
             modifier = Modifier.padding(bottom = 16.dp)
