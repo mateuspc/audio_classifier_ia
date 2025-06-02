@@ -58,4 +58,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.tensorflow.lite.task.audio)
     implementation(libs.tensorflow.lite.gpu.delegate.plugin)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+
 }

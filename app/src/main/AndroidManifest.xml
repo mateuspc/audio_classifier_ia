@@ -16,7 +16,7 @@
         android:theme="@style/Theme.IAAudioApplication"
         tools:targetApi="31">
         <activity
-            android:name=".MainActivity"
+            android:name=".screens.classifier_screen.SoundClassifierView"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.IAAudioApplication">
